@@ -1,16 +1,8 @@
 import { create } from 'zustand';
-import type { UserSettings, DisplaySettings, PlanningSettings } from '@/types';
+import type { UserSettings, PlanningSettings } from '@/types';
 import { getDatabase } from '@/db/database';
 
 const DEFAULT_SETTINGS: UserSettings = {
-  display: {
-    showArabic: true,
-    showTransliteration: true,
-    showPhonetic: false,
-    showTranslation: true,
-    arabicFontSize: 24,
-    translationFontSize: 14,
-  },
   planning: {
     reviewUnit: 'page',
     quantityPerDay: 1,
@@ -20,18 +12,14 @@ const DEFAULT_SETTINGS: UserSettings = {
     backlogStrategy: 'postpone',
   },
   onboardingComplete: false,
-  dataDownloaded: false,
-  dataVersion: '',
 };
 
 interface SettingsState {
   settings: UserSettings;
   loaded: boolean;
   loadSettings: () => Promise<void>;
-  updateDisplay: (update: Partial<DisplaySettings>) => Promise<void>;
   updatePlanning: (update: Partial<PlanningSettings>) => Promise<void>;
   setOnboardingComplete: (value: boolean) => Promise<void>;
-  setDataDownloaded: (version: string) => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -47,20 +35,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     rows.forEach(r => { map[r.key] = r.value; });
 
     const settings: UserSettings = {
-      display: map['display'] ? JSON.parse(map['display']) : DEFAULT_SETTINGS.display,
       planning: map['planning'] ? JSON.parse(map['planning']) : DEFAULT_SETTINGS.planning,
       onboardingComplete: map['onboardingComplete'] === 'true',
-      dataDownloaded: map['dataDownloaded'] === 'true',
-      dataVersion: map['dataVersion'] ?? '',
     };
     set({ settings, loaded: true });
-  },
-
-  updateDisplay: async (update) => {
-    const current = get().settings;
-    const display = { ...current.display, ...update };
-    await persistKey('display', display);
-    set({ settings: { ...current, display } });
   },
 
   updatePlanning: async (update) => {
@@ -74,13 +52,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const current = get().settings;
     await persistKey('onboardingComplete', value);
     set({ settings: { ...current, onboardingComplete: value } });
-  },
-
-  setDataDownloaded: async (version) => {
-    const current = get().settings;
-    await persistKey('dataDownloaded', true);
-    await persistKey('dataVersion', version);
-    set({ settings: { ...current, dataDownloaded: true, dataVersion: version } });
   },
 }));
 

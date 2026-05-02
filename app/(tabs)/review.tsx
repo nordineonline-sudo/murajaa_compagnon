@@ -1,207 +1,128 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors, Spacing, FontSizes, BorderRadius } from '@/constants/theme';
-import { getDatabase } from '@/db/database';
-import { getAllSurahs, getAllJuzs, getAllHizbs, getAllPages } from '@/db/repositories/quranRepo';
-import type { Surah, Juz, Hizb, PageMushaf, ReviewUnit } from '@/types';
+import React, { useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { useTasksStore } from "@/stores/tasksStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { Colors, Spacing, FontSizes, BorderRadius } from "@/constants/theme";
+import { todayDateString } from "@/services/planningAlgorithm";
 
-type Tab = 'surah' | 'page' | 'juz' | 'hizb';
-
-export default function ReviewScreen() {
+export default function PlanScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('surah');
-  const [surahs, setSurahs] = useState<Surah[]>([]);
-  const [juzs, setJuzs] = useState<Juz[]>([]);
-  const [hizbs, setHizbs] = useState<Hizb[]>([]);
-  const [pages, setPages] = useState<PageMushaf[]>([]);
+  const { activePlan, todayCounts, loadToday } = useTasksStore();
+  const { setOnboardingComplete } = useSettingsStore();
 
-  useEffect(() => {
-    async function load() {
-      const db = await getDatabase();
-      const [s, j, h, p] = await Promise.all([
-        getAllSurahs(db),
-        getAllJuzs(db),
-        getAllHizbs(db),
-        getAllPages(db),
-      ]);
-      setSurahs(s);
-      setJuzs(j);
-      setHizbs(h);
-      setPages(p);
-    }
-    load();
-  }, []);
+  useEffect(() => { loadToday(); }, []);
 
-  const TABS: { key: Tab; label: string }[] = [
-    { key: 'surah', label: 'Sourate' },
-    { key: 'page', label: 'Page' },
-    { key: 'juz', label: 'Juz' },
-    { key: 'hizb', label: 'Hizb' },
-  ];
-
-  function navigateToPage(pageId: number) {
-    router.push({ pathname: '/reader/[pageId]', params: { pageId: String(pageId) } });
+  async function handleReset() {
+    Alert.alert(
+      "Réinitialiser le plan",
+      "Cela supprimera votre plan actuel et relancera la configuration.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Confirmer",
+          style: "destructive",
+          onPress: async () => {
+            await setOnboardingComplete(false);
+            router.replace("/onboarding/display");
+          },
+        },
+      ]
+    );
   }
 
-  function renderItem({ item }: { item: Surah | Juz | Hizb | PageMushaf }) {
-    if (activeTab === 'surah') {
-      const s = item as Surah;
-      return (
-        <TouchableOpacity
-          style={styles.item}
-          onPress={() => navigateToPage(s.startPage)}
-        >
-          <View style={styles.itemLeft}>
-            <View style={styles.numBadge}>
-              <Text style={styles.numText}>{s.id}</Text>
-            </View>
-            <View>
-              <Text style={styles.itemArabic}>{s.nameArabic}</Text>
-              <Text style={styles.itemSub}>{s.nameFr} • {s.verseCount} versets</Text>
-            </View>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-      );
-    }
-
-    if (activeTab === 'page') {
-      const p = item as PageMushaf;
-      return (
-        <TouchableOpacity style={styles.item} onPress={() => navigateToPage(p.id)}>
-          <View style={styles.itemLeft}>
-            <View style={styles.numBadge}>
-              <Text style={styles.numText}>{p.id}</Text>
-            </View>
-            <Text style={styles.itemTitle}>Page {p.id} — Juz {p.juzId}</Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-      );
-    }
-
-    if (activeTab === 'juz') {
-      const j = item as Juz;
-      return (
-        <TouchableOpacity style={styles.item} onPress={() => navigateToPage(j.startPage)}>
-          <View style={styles.itemLeft}>
-            <View style={styles.numBadge}>
-              <Text style={styles.numText}>{j.id}</Text>
-            </View>
-            <View>
-              <Text style={styles.itemArabic}>{j.nameArabic}</Text>
-              <Text style={styles.itemSub}>Pages {j.startPage}–{j.endPage}</Text>
-            </View>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-      );
-    }
-
-    if (activeTab === 'hizb') {
-      const h = item as Hizb;
-      return (
-        <TouchableOpacity style={styles.item} onPress={() => navigateToPage(h.startPage)}>
-          <View style={styles.itemLeft}>
-            <View style={styles.numBadge}>
-              <Text style={styles.numText}>{h.id}</Text>
-            </View>
-            <Text style={styles.itemTitle}>Hizb {h.id} • Juz {h.juzId}</Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-      );
-    }
-
-    return null;
-  }
-
-  const data: (Surah | Juz | Hizb | PageMushaf)[] =
-    activeTab === 'surah' ? surahs
-    : activeTab === 'juz' ? juzs
-    : activeTab === 'hizb' ? hizbs
-    : pages;
+  const today = todayDateString();
+  const planEnd = activePlan
+    ? new Date(new Date(activePlan.startDate).getTime() + activePlan.nbDays * 86400000)
+        .toISOString().substring(0, 10)
+    : null;
+  const daysLeft = planEnd
+    ? Math.max(0, Math.ceil((new Date(planEnd).getTime() - new Date(today).getTime()) / 86400000))
+    : 0;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabBar}>
-        {TABS.map(t => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.tab, activeTab === t.key && styles.tabActive]}
-            onPress={() => setActiveTab(t.key)}
-          >
-            <Text style={[styles.tabText, activeTab === t.key && styles.tabTextActive]}>
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <FlatList
-        data={data}
-        keyExtractor={i => String(i.id)}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              Aucune donnée — téléchargez les données Coran dans les Paramètres.
-            </Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Mon Plan</Text>
+      {activePlan ? (
+        <>
+          <View style={styles.card}>
+            <InfoRow label="Début" value={activePlan.startDate} />
+            <InfoRow label="Durée" value={activePlan.nbDays + " jours"} />
+            <InfoRow label="Fin prévue" value={planEnd ?? "—"} />
+            <InfoRow label="Jours restants" value={daysLeft + " j"} />
+            <InfoRow label="Quantité / jour" value={String(activePlan.quantityPerDay)} />
+            <InfoRow label="Backlog" value={activePlan.backlogStrategy === "postpone" ? "Reporter" : "Répartir"} />
           </View>
-        }
-      />
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Aujourd'hui</Text>
+            <View style={styles.statsRow}>
+              <StatBox label="À faire" value={todayCounts.planned} color={Colors.planned} />
+              <StatBox label="Faits" value={todayCounts.done} color={Colors.done} />
+              <StatBox label="Ignorés" value={todayCounts.skipped} color={Colors.skipped} />
+              <StatBox label="Reportés" value={todayCounts.backlog} color={Colors.backlog} />
+            </View>
+          </View>
+          <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
+            <Text style={styles.resetBtnText}>Reconfigurer le plan</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>Aucun plan actif.</Text>
+          <TouchableOpacity style={styles.createBtn} onPress={() => router.replace("/onboarding/display")}>
+            <Text style={styles.createBtnText}>Créer un plan</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+function StatBox({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View style={styles.statBox}>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  content: { padding: Spacing.lg },
+  title: { fontSize: 22, fontWeight: "800", color: Colors.primary, marginBottom: Spacing.lg },
+  card: {
+    backgroundColor: Colors.surface, borderRadius: BorderRadius.md,
+    padding: Spacing.md, marginBottom: Spacing.md, elevation: 1,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
+  cardTitle: { fontSize: FontSizes.md, fontWeight: "700", color: Colors.text, marginBottom: Spacing.md },
+  infoRow: {
+    flexDirection: "row", justifyContent: "space-between",
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border,
   },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: Colors.primary,
+  infoLabel: { fontSize: FontSizes.md, color: Colors.textSecondary },
+  infoValue: { fontSize: FontSizes.md, fontWeight: "600", color: Colors.text },
+  statsRow: { flexDirection: "row", justifyContent: "space-around" },
+  statBox: { alignItems: "center", padding: Spacing.sm },
+  statValue: { fontSize: 24, fontWeight: "700" },
+  statLabel: { fontSize: FontSizes.xs, color: Colors.textSecondary, marginTop: 2 },
+  resetBtn: {
+    marginTop: Spacing.sm, padding: Spacing.md, borderRadius: BorderRadius.md,
+    borderWidth: 1.5, borderColor: "#e53935", alignItems: "center",
   },
-  tabText: { color: Colors.textSecondary, fontSize: FontSizes.md },
-  tabTextActive: { color: Colors.primary, fontWeight: '700' },
-  list: { padding: Spacing.sm },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
-    padding: Spacing.md,
-    marginBottom: 1,
-    borderRadius: BorderRadius.sm,
-  },
-  itemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  numBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  numText: { color: Colors.primary, fontWeight: '700', fontSize: FontSizes.sm },
-  itemArabic: { fontSize: FontSizes.lg, color: Colors.arabic, fontWeight: '500' },
-  itemTitle: { fontSize: FontSizes.md, color: Colors.text },
-  itemSub: { fontSize: FontSizes.sm, color: Colors.textSecondary },
-  chevron: { color: Colors.textLight, fontSize: 22 },
-  emptyState: { padding: Spacing.xl, alignItems: 'center' },
-  emptyText: { color: Colors.textSecondary, textAlign: 'center' },
+  resetBtnText: { color: "#e53935", fontWeight: "600", fontSize: FontSizes.md },
+  emptyCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.md, padding: Spacing.xl, alignItems: "center" },
+  emptyText: { fontSize: FontSizes.md, color: Colors.textSecondary, marginBottom: Spacing.lg },
+  createBtn: { backgroundColor: Colors.primary, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, borderRadius: BorderRadius.md },
+  createBtnText: { color: Colors.textInverse, fontWeight: "700", fontSize: FontSizes.md },
 });

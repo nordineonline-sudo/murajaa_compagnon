@@ -59,9 +59,6 @@ export default function TodayScreen() {
           renderItem={({ item }) => (
             <TaskCard
               task={item}
-              onPress={() =>
-                router.push({ pathname: '/reader/[pageId]', params: { pageId: String(item.unitId), taskId: String(item.id) } })
-              }
               onMarkDone={() => markTaskDone(item.id)}
               onSkip={() => markTaskSkipped(item.id)}
             />
@@ -70,14 +67,9 @@ export default function TodayScreen() {
             pendingTasks.length > 0 ? (
               <TouchableOpacity
                 style={styles.startBtn}
-                onPress={() =>
-                  router.push({
-                    pathname: '/reader/[pageId]',
-                    params: { pageId: String(pendingTasks[0].unitId), taskId: String(pendingTasks[0].id) },
-                  })
-                }
+                onPress={() => markTaskDone(pendingTasks[0].id)}
               >
-                <Text style={styles.startBtnText}>▶ Commencer la révision</Text>
+                <Text style={styles.startBtnText}>▶ Marquer la première tâche comme faite</Text>
               </TouchableOpacity>
             ) : null
           }

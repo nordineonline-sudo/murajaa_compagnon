@@ -9,8 +9,8 @@ import { Colors, Spacing, FontSizes, BorderRadius } from '@/constants/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { settings, updateDisplay, updatePlanning, setOnboardingComplete } = useSettingsStore();
-  const { display, planning } = settings;
+  const { settings, updatePlanning, setOnboardingComplete } = useSettingsStore();
+  const { planning } = settings;
 
   async function toggleHour(hour: number) {
     const current = planning.notificationHours;
@@ -45,34 +45,6 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Display section */}
-      <SectionTitle title="Affichage" />
-      <View style={styles.card}>
-        <SettingRow
-          label="Arabe"
-          value={display.showArabic}
-          onToggle={v => updateDisplay({ showArabic: v })}
-        />
-        <Divider />
-        <SettingRow
-          label="Translittération"
-          value={display.showTransliteration}
-          onToggle={v => updateDisplay({ showTransliteration: v })}
-        />
-        <Divider />
-        <SettingRow
-          label="Phonétique (française)"
-          value={display.showPhonetic}
-          onToggle={v => updateDisplay({ showPhonetic: v })}
-        />
-        <Divider />
-        <SettingRow
-          label="Traduction française"
-          value={display.showTranslation}
-          onToggle={v => updateDisplay({ showTranslation: v })}
-        />
-      </View>
-
       {/* Notifications */}
       <SectionTitle title="Rappels quotidiens" />
       <View style={styles.card}>
@@ -122,10 +94,8 @@ export default function SettingsScreen() {
       </View>
 
       {/* Data */}
-      <SectionTitle title="Données" />
+      <SectionTitle title="Général" />
       <View style={styles.card}>
-        <InfoRow label="Version données" value={settings.dataVersion || 'Non téléchargé'} />
-        <Divider />
         <TouchableOpacity
           style={styles.dangerBtn}
           onPress={resetOnboarding}

@@ -1,79 +1,6 @@
 // ─────────────────────────────────────────────
-// Coran entities
-// ─────────────────────────────────────────────
-
-export interface Surah {
-  id: number;           // 1-114
-  nameArabic: string;
-  nameTranslit: string;
-  nameFr: string;
-  verseCount: number;
-  revelationType: 'meccan' | 'medinan';
-  startPage: number;
-}
-
-export interface Ayah {
-  id: number;           // global index 1-6236
-  surahId: number;
-  numberInSurah: number;
-  arabic: string;
-  transliteration: string;
-  phoneticFr: string;   // "francisée" phonetic
-  translationFr: string;
-  pageId: number;
-  juzId: number;
-  hizbId: number;
-}
-
-/** One physical page of the Mushaf (1-604). */
-export interface PageMushaf {
-  id: number;           // 1-604
-  juzId: number;
-  hizbId: number;
-  firstAyahId: number;
-  lastAyahId: number;
-  lineCount: number;    // typically 15
-}
-
-/** One line on a mushaf page. */
-export interface Line {
-  id: number;           // global line id
-  pageId: number;
-  lineIndex: number;    // 1-based within page
-  ayahIds: number[];    // ayahs (or segments) visible on this line
-  isBasmala: boolean;
-}
-
-export interface Juz {
-  id: number;           // 1-30
-  nameArabic: string;
-  startPage: number;
-  endPage: number;
-  firstAyahId: number;
-  lastAyahId: number;
-}
-
-export interface Hizb {
-  id: number;           // 1-60  (2 hizb per juz)
-  juzId: number;
-  startPage: number;
-  endPage: number;
-  firstAyahId: number;
-  lastAyahId: number;
-}
-
-// ─────────────────────────────────────────────
 // User preferences
 // ─────────────────────────────────────────────
-
-export interface DisplaySettings {
-  showArabic: boolean;
-  showTransliteration: boolean;
-  showPhonetic: boolean;
-  showTranslation: boolean;
-  arabicFontSize: number;   // default 24
-  translationFontSize: number; // default 14
-}
 
 export type ReviewUnit = 'surah' | 'page' | 'juz' | 'hizb' | 'line';
 export type BacklogStrategy = 'postpone' | 'spread';
@@ -88,24 +15,8 @@ export interface PlanningSettings {
 }
 
 export interface UserSettings {
-  display: DisplaySettings;
   planning: PlanningSettings;
   onboardingComplete: boolean;
-  dataDownloaded: boolean;
-  dataVersion: string;
-}
-
-// ─────────────────────────────────────────────
-// Review selections
-// ─────────────────────────────────────────────
-
-export interface ReviewSelection {
-  id: number;
-  unitType: ReviewUnit;
-  unitId: number;         // foreign key to Surah.id / PageMushaf.id / etc.
-  label: string;
-  selected: boolean;
-  orderIndex: number;
 }
 
 // ─────────────────────────────────────────────

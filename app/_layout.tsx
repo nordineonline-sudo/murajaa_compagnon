@@ -40,11 +40,8 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding/display" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding/download" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding/selection" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding/plan-setup" options={{ headerShown: false }} />
-        <Stack.Screen name="reader/[pageId]" options={{ headerShown: false }} />
-        <Stack.Screen name="completion" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
     </>
   );

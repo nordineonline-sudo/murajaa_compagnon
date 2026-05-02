@@ -30,9 +30,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="review"
         options={{
-          title: 'Révision',
+          title: 'Mon Plan',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
+            <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
